@@ -88,6 +88,26 @@ class MainActivity : AppCompatActivity() {
                     startActivity(callIntent)
                     return true
                 }
+                // Check if the URL is a link to Facebook, YouTube, Instagram, or LinkedIn
+                else if (url!!.startsWith("https://www.facebook.com/")) {
+                    openAppOrWebPage("com.facebook.katana", url)
+                    return true
+                } else if (url.startsWith("https://www.youtube.com/")) {
+                    openAppOrWebPage("com.google.android.youtube", url)
+                    return true
+                } else if (url.startsWith("https://www.instagram.com/")) {
+                    openAppOrWebPage("com.instagram.android", url)
+                    return true
+                } else if (url.startsWith("https://www.linkedin.com/")) {
+                    openAppOrWebPage("com.linkedin.android", url)
+                    return true
+                }else if (url.startsWith("https://twitter.com/")) {
+                    openAppOrWebPage("com.twitter.android", url)
+                    return true
+                }else if (url.startsWith("mailto:")) {
+                    openEmailInGmail(url)
+                    return true
+                }
                 return super.shouldOverrideUrlLoading(view, url)
             }
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -330,6 +350,20 @@ class MainActivity : AppCompatActivity() {
         return darkness >= 0.5
     }
 
+    private fun openAppOrWebPage(packageName: String, webUrl: String) {
+        val appIntent = packageManager.getLaunchIntentForPackage(packageName)
+        if (appIntent != null) {
+            startActivity(appIntent)
+        } else {
+            // If the app is not installed, open the link in a browser
+            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(webUrl))
+            startActivity(browserIntent)
+        }
+    }
+    private fun openEmailInGmail(emailUrl: String) {
+        val emailIntent = Intent(Intent.ACTION_SENDTO, Uri.parse(emailUrl))
+        startActivity(emailIntent)
+    }
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
