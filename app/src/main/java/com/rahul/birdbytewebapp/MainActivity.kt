@@ -221,34 +221,43 @@ class MainActivity : AppCompatActivity() {
                 q.setFilterById(downloadId)
                 val cursor = (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).query(q)
                 cursor.moveToFirst()
-                val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
-                val bytesDownloaded = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                val bytesTotal = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                try {
+                    val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+                    val bytesDownloaded = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+                    val bytesTotal = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
 
-                when (status) {
-                    DownloadManager.STATUS_SUCCESSFUL -> {
-                        downloading = false
-                        cursor.close()
-                        // Hide the progress bar after the download is complete
-                        runOnUiThread {
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            // Show a toast message indicating the download is complete
-                            showToast("Download complete")
+                    when (status) {
+                        DownloadManager.STATUS_SUCCESSFUL -> {
+                            downloading = false
+                            cursor.close()
+                            // Hide the progress bar after the download is complete
+                            runOnUiThread {
+                                progressBar.visibility = ProgressBar.INVISIBLE
+                                // Show a toast message indicating the download is complete
+                                showToast("Download complete")
+                            }
+                        }
+                        DownloadManager.STATUS_FAILED -> {
+                            downloading = false
+                            cursor.close()
+                            // Hide the progress bar after the download fails
+                            runOnUiThread {
+                                progressBar.visibility = ProgressBar.INVISIBLE
+                                // Show a toast message indicating the download failed
+                                showToast("Download failed")
+                            }
                         }
                     }
-                    DownloadManager.STATUS_FAILED -> {
-                        downloading = false
-                        cursor.close()
-                        // Hide the progress bar after the download fails
-                        runOnUiThread {
-                            progressBar.visibility = ProgressBar.INVISIBLE
-                            // Show a toast message indicating the download failed
-                            showToast("Download failed")
-                        }
+                    // You can handle other status codes as needed
+                    cursor.close()
+                }catch (e:Exception){
+                    e.message
+                    runOnUiThread {
+                        progressBar.visibility = ProgressBar.INVISIBLE
+                        // Show a toast message indicating the download failed
+                        showToast("Download Cancel")
                     }
                 }
-                // You can handle other status codes as needed
-                cursor.close()
             }
         }.start()
     }
@@ -391,8 +400,10 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             for (i in grantResults.indices) {
                 if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                    Log.i(TAG, "onRequestPermissionsResult: G= ${grantResults[i]}")
                     showToast("Permission granted.")
                 } else {
+                    Log.i(TAG, "onRequestPermissionsResult: D= ${grantResults[i]}")
                     showToast("Permission denied.")
                 }
             }
