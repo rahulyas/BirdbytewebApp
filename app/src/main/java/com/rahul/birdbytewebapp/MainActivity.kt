@@ -38,11 +38,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var progressBar: ProgressBar
     private lateinit var errorMessageTextView: TextView
+    private val PERMISSION_REQUEST_CODE = 1001
     // Load a URL into the WebView
     var url = "https://birdbyteweb.com"
 
     companion object {
-        private const val REQUEST_CALL_PHONE_PERMISSION = 1
         private const val REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION = 1
     }
 
@@ -50,6 +50,16 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val permissions = arrayOf(
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION,
+            android.Manifest.permission.ACCESS_NETWORK_STATE,
+            android.Manifest.permission.CALL_PHONE,
+            android.Manifest.permission.INTERNET
+        )
+
+        requestPermissionsIfNecessary(permissions)
 
         if (isNetworkAvailable()) {
             setupWebView()
@@ -171,25 +181,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    // Handle the result of the permission request
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            REQUEST_CALL_PHONE_PERMISSION -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Permission granted, proceed with the dialing action
-                    showToast("Permission granted.")
-                } else {
-                    // Permission denied, handle it as needed (e.g., show a message)
-                    showToast("Permission denied.")
-                }
-            }
-        }
-    }
 
     private fun handleDownload(url: String, contentDisposition: String?, mimeType: String?) {
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -200,14 +191,12 @@ class MainActivity : AppCompatActivity() {
             request.setMimeType(mimeType)
             request.setDescription("Downloading file")
             request.setTitle("File Download")
-
             // Set destination folder and file name
             request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "BirdByte")
             showToast("Download started")
             // Enqueue the download and get the download ID
             val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val downloadId = downloadManager.enqueue(request)
-
             // Show the progress bar for the download
             showProgressBar(downloadId)
         } else {
@@ -224,7 +213,6 @@ class MainActivity : AppCompatActivity() {
     private fun showProgressBar(downloadId: Long) {
         // Show the progress bar for the download
         progressBar.visibility = ProgressBar.VISIBLE
-
         // Poll the download status and update the progress bar
         Thread {
             var downloading = true
@@ -241,7 +229,6 @@ class MainActivity : AppCompatActivity() {
                     DownloadManager.STATUS_SUCCESSFUL -> {
                         downloading = false
                         cursor.close()
-
                         // Hide the progress bar after the download is complete
                         runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
@@ -252,7 +239,6 @@ class MainActivity : AppCompatActivity() {
                     DownloadManager.STATUS_FAILED -> {
                         downloading = false
                         cursor.close()
-
                         // Hide the progress bar after the download fails
                         runOnUiThread {
                             progressBar.visibility = ProgressBar.INVISIBLE
@@ -261,9 +247,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
-
                 // You can handle other status codes as needed
-
                 cursor.close()
             }
         }.start()
@@ -366,6 +350,53 @@ class MainActivity : AppCompatActivity() {
     }
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+
+    private fun requestPermissionsIfNecessary(permissions: Array<String>) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val permissionsToRequest = ArrayList<String>()
+
+            // Check each permission in the array
+            for (permission in permissions) {
+                if (ContextCompat.checkSelfPermission(this, permission)
+                    != PackageManager.PERMISSION_GRANTED
+                ) {
+                    // Permission not granted, add it to the list of permissions to request
+                    permissionsToRequest.add(permission)
+                }
+            }
+
+            // Request the necessary permissions
+            if (permissionsToRequest.isNotEmpty()) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    permissionsToRequest.toTypedArray(),
+                    PERMISSION_REQUEST_CODE
+                )
+            }
+            // No permissions need to be requested
+            // You can also handle this case based on your app's logic
+        }
+    }
+
+    // Handle the result of the permission request
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            for (i in grantResults.indices) {
+                if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                    showToast("Permission granted.")
+                } else {
+                    showToast("Permission denied.")
+                }
+            }
+        }
     }
 
 }
